@@ -2,4 +2,4 @@
 *.do
 *.dta
 *.txt
-Ignore/
+#Ignore/
