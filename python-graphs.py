@@ -3,17 +3,15 @@
 
 # In[1]:
 
-
 import matplotlib.pyplot as plt
 import pandas as pd
 import statsmodels.tsa.stattools as ts
 import numpy as np
 import openpyxl
-
+from statsmodels.tsa.vector_ar.vecm import coint_johansen
 
 
 # In[2]:
-
 
 oil_excel = pd.read_excel("Ignore/WTI.xlsx", sheet_name='Monthly', engine="openpyxl")  # Specify engine for .xlsx files
 oil_excel
@@ -26,12 +24,9 @@ oil_excel
 
 # In[3]:
 
-
 oil_excel[oil_excel['observation_date'] == '1969-01-01']
 
-
 # In[4]:
-
 
 oil_from_1969 = oil_excel.iloc[276:]
 oil_from_1969
@@ -160,13 +155,6 @@ plt.ylabel('relative change')
 plt.legend()
 
 
-# In[13]:
-
-
-results = ts.coint(alldata_workingdata['real_WTI']/alldata_workingdata['real_WTI'].iloc[0]* 100, alldata_workingdata['real_AirFares']/alldata_workingdata['real_AirFares'].iloc[0]* 100)
-results
-
-
 # In[14]:
 
 
@@ -235,7 +223,7 @@ print(adf_realairfares[0:2])
 
 # %%
 alldata_workingdata = alldata_workingdata.copy()
-alldata_workingdata.reset_index()
+alldata_workingdata.reset_index(level= 0, drop= True, inplace=True)
 GDP_excel = pd.read_excel("Ignore/GDP.xlsx", sheet_name='Quarterly', engine="openpyxl")  # Specify engine for .xlsx files
 quarter_GDP = GDP_excel['GDP'].iloc[88:]
 quarter_GDP.index = GDP_excel['observation_date'].iloc[88:]
@@ -247,26 +235,7 @@ completegdp = pd.concat([cleangdp, new_row_1, new_row_2], ignore_index=True)
 alldata_workingdata['GDP'] = completegdp['GDP']
 alldata_workingdata.dropna()
 
-
-
-
-
-
-
-
-
-
-
-
 # %%
-
-plt.figure()
-plt.plot(alldata_workingdata['observation_date'], alldata_workingdata['GDP'], color = 'red')
-plt.plot(alldata_workingdata['observation_date'], alldata_workingdata['real_AirFares'], color = 'orange')
-
-
-# %%
-
 
 log_gdp = np.log(alldata_workingdata['GDP'])
 # %%
@@ -281,5 +250,92 @@ plt.plot(log_real_oil_price/log_real_oil_price.iloc[0])
 # %%
 log_real_airfares_price
 # %%
-plt.scatter(real_fares, real_oil)
+plt.scatter(alldata_workingdata['real_WTI'], alldata_workingdata['real_AirFares'], color = 'purple')
+plt.ylabel('Real Airfares (index values)')
+plt.xlabel('Real WTI (us$/bbl)')
+plt.title('Scatter plot of Real Airfares vs Real WTI')
+plt.show()
+# %%
+
+
+# %%
+plt.scatter(alldata_workingdata['real_WTI'].iloc[-120:], alldata_workingdata['real_AirFares'].iloc[-120:], color = 'red')
+plt.ylabel('Real Airfares (index values)')
+plt.xlabel('Real WTI (us$/bbl)')
+plt.title('Last 10 years of Real Airfares vs Real WTI')
+plt.show()
+# %%
+
+alldata_workingdata.loc[alldata_workingdata['observation_date'] == '2020-02-01']
+# %% 
+plt.scatter(alldata_workingdata['real_WTI'].iloc[613:], alldata_workingdata['real_AirFares'].iloc[613:], color = 'blue')
+plt.ylabel('Real Airfares (index values)')
+plt.xlabel('Real WTI (us$/bbl)')
+plt.title(' Real Airfares vs Real WTI From Covid Start (feb 2020)')
+plt.show()
+# %%
+alldata_workingdata.loc[alldata_workingdata['observation_date'] == '2022-01-01']
+# %% 
+plt.scatter(alldata_workingdata['real_WTI'].iloc[636:], alldata_workingdata['real_AirFares'].iloc[636:], color = 'green')
+plt.ylabel('Real Airfares (index values)')
+plt.xlabel('Real WTI (us$/bbl)')
+plt.title(' Real Airfares vs Real WTI From Covid recovery (jan 2022)')
+plt.show()
+# %%
+plt.scatter(alldata_workingdata['real_WTI'].iloc[-240:], alldata_workingdata['real_AirFares'].iloc[-240:], color = 'magenta')
+plt.ylabel('Real Airfares (index values)')
+plt.xlabel('Real WTI (us$/bbl)')
+plt.title(' Last 20 years Real Airfares vs Real WTI')
+plt.show()
+# %%
+
+
+# Run the Johansen cointegration test
+johansen_test = coint_johansen(alldata_workingdata[['real_WTI', 'real_AirFares']], det_order=0, k_ar_diff=1)
+
+ # Eigenvalues and test statistics
+print("Eigenvalues:\n", johansen_test.eig)
+
+# Trace Statistic (lr1) and Maximum Eigen Statistic (lr2)
+print("Trace Statistic (lr1):\n", johansen_test.lr1)
+print("Max Eigen Statistic (lr2):\n", johansen_test.lr2)
+
+# Critical values for Trace Statistic and Max Eigen Statistic
+print("Critical Values for Trace Statistic:\n", johansen_test.cvt)  # Critical values for trace test
+print("Critical Values for Max Eigen Statistic:\n", johansen_test.cvm)  # Critical values for max eigen test
+
+# Sample Size
+print("Sample Size:", alldata_workingdata.shape[0])
+
+# %%
+
+# Engler Granger Cointegration test
+score, p_value, critical_values = ts.coint(alldata_workingdata['real_WTI'], alldata_workingdata['real_AirFares'])
+print("Cointegration test p-value:", p_value)
+print("Critical values:", critical_values)
+print("Test score:", score)
+
+
+# %%
+
+positive = alldata_workingdata[(alldata_workingdata['real_WTI'].diff(1) > 0)]
+
+positive
+# %%
+plt.scatter(positive['real_WTI'], positive['real_AirFares'], color = 'cyan')
+plt.ylabel('Real Airfares (index values)')
+plt.xlabel('Real WTI (us$/bbl)')
+plt.title('Real WTI vs Real Airfares If Oil Price Increased vs last month')
+plt.show()
+# %%
+
+
+
+negative = alldata_workingdata[(alldata_workingdata['real_WTI'].diff(1) < 0)]
+
+plt.scatter(positive['real_WTI'], positive['real_AirFares'], color = 'black')
+plt.ylabel('Real Airfares (index values)')
+plt.xlabel('Real WTI (us$/bbl)')
+plt.title('Real WTI vs Real Airfares If Oil price decreased vs last month')
+plt.show()
 # %%
