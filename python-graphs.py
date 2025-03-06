@@ -8,13 +8,14 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import statsmodels.tsa.stattools as ts
 import numpy as np
-print(plt)
+import openpyxl
+
 
 
 # In[2]:
 
 
-oil_excel = pd.read_excel("WTI.xlsx", sheet_name='Monthly', engine="openpyxl")  # Specify engine for .xlsx files
+oil_excel = pd.read_excel("Ignore/WTI.xlsx", sheet_name='Monthly', engine="openpyxl")  # Specify engine for .xlsx files
 oil_excel
 print(plt)
 
@@ -47,7 +48,7 @@ plt.show()
 # In[5]:
 
 
-alldata_excel = pd.read_excel("Alldata.xlsx", engine="openpyxl")  # Specify engine for .xlsx files
+alldata_excel = pd.read_excel("Ignore/Alldata.xlsx", engine="openpyxl")  # Specify engine for .xlsx files
 alldata_workingdata = alldata_excel.iloc[264:]
 cpi = alldata_workingdata[['observation_date', 'CPI']]
 cpi
@@ -225,5 +226,60 @@ plt.show()
 # In[ ]:
 
 
+adf_realairfares = ts.adfuller(log_real_airfares_returns)
 
 
+print(adf_realairfares[0:2])
+# %%
+
+
+# %%
+alldata_workingdata = alldata_workingdata.copy()
+alldata_workingdata.reset_index()
+GDP_excel = pd.read_excel("Ignore/GDP.xlsx", sheet_name='Quarterly', engine="openpyxl")  # Specify engine for .xlsx files
+quarter_GDP = GDP_excel['GDP'].iloc[88:]
+quarter_GDP.index = GDP_excel['observation_date'].iloc[88:]
+monthly_GDP = quarter_GDP.resample('MS').ffill()
+cleangdp = monthly_GDP.reset_index()
+new_row_1 = pd.DataFrame({'observation_date': ['2024-11-01'], 'GDP': [29719.647]})  # Replace with actual column names and values
+new_row_2 = pd.DataFrame({'observation_date': ['2024-12-01'], 'GDP': [29719.647]})  # Replace with actual column names and values
+completegdp = pd.concat([cleangdp, new_row_1, new_row_2], ignore_index=True)
+alldata_workingdata['GDP'] = completegdp['GDP']
+alldata_workingdata.dropna()
+
+
+
+
+
+
+
+
+
+
+
+
+# %%
+
+plt.figure()
+plt.plot(alldata_workingdata['observation_date'], alldata_workingdata['GDP'], color = 'red')
+plt.plot(alldata_workingdata['observation_date'], alldata_workingdata['real_AirFares'], color = 'orange')
+
+
+# %%
+
+
+log_gdp = np.log(alldata_workingdata['GDP'])
+# %%
+log_gdp_returns = log_gdp.diff().dropna()
+# %%
+log_gdp_returns.head(50)
+# %%
+
+plt.figure()
+plt.plot(log_real_airfares_price/log_real_airfares_price.iloc[0])
+plt.plot(log_real_oil_price/log_real_oil_price.iloc[0])
+# %%
+log_real_airfares_price
+# %%
+plt.scatter(real_fares, real_oil)
+# %%
